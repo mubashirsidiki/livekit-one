@@ -108,3 +108,7 @@ uv run agent.py start
 - Responds to natural speech in real time
 - Supports interruptions and turn-taking
 - Room lifecycle is managed by LiveKit Cloud
+
+## Cost Analysis
+
+<img width="805" height="577" alt="image" src="https://github.com/user-attachments/assets/1ac7b1d8-2fcb-4c1f-8d16-518420f42d74" />
