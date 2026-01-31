@@ -37,21 +37,21 @@ winget install LiveKit.LiveKitCLI
 
 ```bash
 lk cloud auth
-lk project set-default "<project-name>"
 ```
 
 This opens a browser where you log in to LiveKit Cloud and select/create a project.
 
-### Environment Variables
+After authentication, run the following command to automatically create a `.env.local` file with the correct credentials:
 
 ```bash
-lk project env -w
+lk app env -w
 ```
 
-Creates `.env` with:
+Creates `.env.local` with:
 - `LIVEKIT_URL`
 - `LIVEKIT_API_KEY`
 - `LIVEKIT_API_SECRET`
+- `NEXT_PUBLIC_LIVEKIT_URL`
 
 [View credentials sheet](https://docs.google.com/spreadsheets/d/1eSq3vo-d6L5JbJQ3kL0ZpKUtZajnyGS-OVdglcB5bzQ/edit?usp=sharing)
 
@@ -62,10 +62,25 @@ Creates `.env` with:
 lk agent create
 ```
 
+This command will prompt you to select or confirm:
+- The project on LiveKit Cloud
+- The local project
+- The TOML configuration file
+- The environment file
+
+Upon successful creation, it will automatically create `livekit.toml` with project subdomain and agent ID, and ask if you want to view logs (recommended to check build status). Example output:
+```
+Build completed - You can view build logs later with `lk agent logs --log-type=build`
+Tailing runtime logs...safe to exit at any time
+Waiting for deployment to start...
+```
+
 **Updates:**
 ```bash
 lk agent deploy
 ```
+
+As you make changes locally, run this command to sync them to the deployed agent. It only syncs changes; no need to run `lk agent create` again.
 
 ---
 
