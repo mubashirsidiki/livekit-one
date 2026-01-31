@@ -20,7 +20,7 @@ All models run through LiveKit's managed inference layer.
 
 - Python 3.10 – 3.13
 - uv package manager
-- A free LiveKit Cloud account
+- A free LiveKit Cloud account (note: allows only one free deployment)
 
 ---
 
@@ -135,3 +135,15 @@ uv run agent.py start
 <img width="805" height="577" alt="image" src="https://github.com/user-attachments/assets/1ac7b1d8-2fcb-4c1f-8d16-518420f42d74" />
 
 For pricing details, see [LiveKit Pricing](https://livekit.io/pricing) and [Inference Pricing](https://livekit.io/pricing/inference).
+
+## LiveKit CLI Project Management
+
+Use `lk project` commands to manage LiveKit projects via CLI. For full details, see [LiveKit Docs: Project Management](https://docs.livekit.io/intro/basics/cli/projects).
+
+### Key Commands
+
+- `lk cloud auth`: Authenticate and link LiveKit Cloud projects.
+- `lk project add`: Add a new project manually.
+- `lk project list`: List configured projects.
+- `lk project remove`: Remove a project.
+- `lk project set-default`: Set default project.
