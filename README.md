@@ -82,6 +82,12 @@ lk agent deploy
 
 As you make changes locally, run this command to sync them to the deployed agent. It only syncs changes; no need to run `lk agent create` again.
 
+After successful deployment, test your deployed agent at [Agents Playground](https://agents-playground.livekit.io/).
+
+To view your projects and agents, visit [LiveKit Cloud](https://cloud.livekit.io).
+
+For general documentation, see [LiveKit Docs](https://docs.livekit.io/intro/overview/).
+
 ---
 
 ## Local Development
@@ -127,3 +133,5 @@ uv run agent.py start
 ## Cost Analysis
 
 <img width="805" height="577" alt="image" src="https://github.com/user-attachments/assets/1ac7b1d8-2fcb-4c1f-8d16-518420f42d74" />
+
+For pricing details, see [LiveKit Pricing](https://livekit.io/pricing) and [Inference Pricing](https://livekit.io/pricing/inference).
