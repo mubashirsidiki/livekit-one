@@ -1,0 +1,65 @@
+import logging
+from dotenv import load_dotenv
+
+from livekit import agents, rtc
+from livekit.agents import AgentServer, AgentSession, Agent, inference, room_io
+from livekit.plugins import noise_cancellation, silero
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
+
+load_dotenv(".env.local")
+
+logger = logging.getLogger(__name__)
+
+
+class Assistant(Agent):
+    def __init__(self) -> None:
+        super().__init__(
+            instructions="""You are a helpful voice AI assistant.
+            You eagerly assist users with their questions by providing information from your extensive knowledge.
+            Your responses are concise, to the point, and without any complex formatting or punctuation including emojis, asterisks, or other symbols.
+            You are curious, friendly, and have a sense of humor.""",
+        )
+
+server = AgentServer()
+
+@server.rtc_session()
+async def my_agent(ctx: agents.JobContext):
+    session = AgentSession(
+        stt=inference.STT(model="assemblyai/universal-streaming", language="en"),
+        llm=inference.LLM(model="google/gemini-2.5-flash-lite"),
+        tts=inference.TTS(model="inworld/inworld-tts-1.5-mini", voice="Craig", language="en"),
+        vad=silero.VAD.load(),
+        turn_detection=MultilingualModel(),
+    )
+
+    @session.on("user_input_transcribed")
+    def on_user_input_transcribed(ev):
+        """Called when user speech is transcribed."""
+        logger.info(f"[Transcript] user: {ev.transcript}")
+
+    @session.on("conversation_item_added")
+    def on_conversation_item_added(ev):
+        """Called when a message is added to chat history."""
+        # ev.item is a ChatMessage with role and content
+        if hasattr(ev, 'item'):
+            role = ev.item.role
+            content = ev.item.content if isinstance(ev.item.content, str) else str(ev.item.content)
+            logger.info(f"[Chat History] {role}: {content}")
+
+    await session.start(
+        room=ctx.room,
+        agent=Assistant(),
+        room_options=room_io.RoomOptions(
+            audio_input=room_io.AudioInputOptions(
+                noise_cancellation=lambda params: noise_cancellation.BVCTelephony() if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP else noise_cancellation.BVC(),
+            ),
+        ),
+    )
+
+    await session.generate_reply(
+        instructions="Greet the user and offer your assistance."
+    )
+
+
+if __name__ == "__main__":
+    agents.cli.run_app(server)

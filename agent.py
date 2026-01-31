@@ -1,0 +1,119 @@
+import logging
+import asyncio
+from dotenv import load_dotenv
+from typing import Annotated
+from pydantic import Field
+
+from livekit import agents, rtc
+from livekit.agents import (
+    AgentServer,
+    AgentSession,
+    Agent,
+    inference,
+    room_io,
+    RunContext,
+    function_tool,
+)
+from livekit.plugins import noise_cancellation, silero
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
+
+load_dotenv(".env.local")
+
+# logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+class Assistant(Agent):
+    def __init__(self) -> None:
+        super().__init__(
+            instructions=(
+                "You are a helpful voice AI assistant. "
+                "If the user asks to end the call or says goodbye, "
+                "first say a polite goodbye like "
+                "'Okay, ending the conversation now. Goodbye!' "
+                "and THEN call the end_conversation tool."
+            )
+        )
+
+    @function_tool
+    async def end_conversation(
+        self,
+        context: RunContext,
+        reason: Annotated[str, Field(description="Why the call is ending")],
+    ) -> None:
+        logger.info(f"End requested: {reason}")
+        context.session.userdata["end_requested"] = True
+
+
+server = AgentServer()
+
+
+@server.rtc_session()
+async def entrypoint(ctx: agents.JobContext):
+    session = AgentSession(
+        stt=inference.STT(
+            model="assemblyai/universal-streaming",
+            language="en",
+        ),
+        llm=inference.LLM(
+            model="google/gemini-2.5-flash-lite",
+        ),
+        tts=inference.TTS(
+            model="inworld/inworld-tts-1.5-mini",
+            voice="Craig",
+            language="en",
+        ),
+        vad=silero.VAD.load(),
+        turn_detection=MultilingualModel(),
+        userdata={
+            "end_requested": False,
+            "shutdown_started": False,
+        },
+    )
+
+    @session.on("conversation_item_added")
+    def on_conversation_item_added(ev):
+        if hasattr(ev, "item"):
+            logger.info(f"[Chat] {ev.item.role}: {ev.item.content}")
+
+    @session.on("agent_state_changed")
+    def on_agent_state_changed(ev):
+        if (
+            ev.new_state == "listening"
+            and session.userdata["end_requested"]
+            and not session.userdata["shutdown_started"]
+        ):
+            session.userdata["shutdown_started"] = True
+
+            async def shutdown():
+                try:
+                    await session.shutdown(drain=True)
+                except Exception:
+                    pass
+
+            asyncio.create_task(shutdown())
+
+    await session.start(
+        room=ctx.room,
+        agent=Assistant(),
+        room_options=room_io.RoomOptions(
+            delete_room_on_close=True,
+            audio_input=room_io.AudioInputOptions(
+                noise_cancellation=lambda params: (
+                    noise_cancellation.BVCTelephony()
+                    if params.participant.kind
+                    == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
+                    else noise_cancellation.BVC()
+                ),
+            ),
+        ),
+    )
+
+    await session.generate_reply(
+        instructions="Hello! How can I help you today?",
+        allow_interruptions=False,
+    )
+
+
+if __name__ == "__main__":
+    agents.cli.run_app(server)
