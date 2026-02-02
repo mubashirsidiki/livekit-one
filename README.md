@@ -132,7 +132,7 @@ uv run agent.py start
 
 ## Cost Analysis
 
-<img width="805" height="577" alt="image" src="https://github.com/user-attachments/assets/1ac7b1d8-2fcb-4c1f-8d16-518420f42d74" />
+<img width="913" height="636" alt="image" src="https://github.com/user-attachments/assets/00b2a3ae-5d86-4b9f-971f-02c9c1773892" />
 
 For pricing details, see [LiveKit Pricing](https://livekit.io/pricing) and [Inference Pricing](https://livekit.io/pricing/inference).
 
