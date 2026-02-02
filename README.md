@@ -148,7 +148,7 @@ Gemini Realtime may choose to call a tool without speaking a goodbye. This is ex
 
 ## Cost Analysis
 
-<img width="805" height="577" alt="image" src="https://github.com/user-attachments/assets/1ac7b1d8-2fcb-4c1f-8d16-518420f42d74" />
+<img width="984" height="685" alt="image" src="https://github.com/user-attachments/assets/97a9e7f8-ddf8-46d6-ab75-74f54c36ace7" />
 
 For pricing details, see [LiveKit Pricing](https://livekit.io/pricing) and [Inference Pricing](https://livekit.io/pricing/inference).
 
