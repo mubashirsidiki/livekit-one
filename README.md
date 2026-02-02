@@ -6,21 +6,26 @@ You can talk to this agent from the terminal, browser, or phone.
 
 ## What This Project Uses
 
-This agent is built with a standard STT → LLM → TTS voice pipeline powered by LiveKit Inference.
+This agent uses Google's Gemini Live (realtime) model for low-latency voice interactions via LiveKit's Google plugin.
 
-- **Speech-to-Text:** AssemblyAI Universal Streaming
-- **Language Model:** Gemini 2.5 Flash Lite
-- **Text-to-Speech:** Inworld TTS (voice: Craig)
-- **Voice Activity Detection:** Silero
-- **Turn Detection:** Multilingual model
+- **Realtime LLM + Audio:** Gemini Live Realtime (native audio)
+- **Voice Activity Detection:** Silero (local VAD)
+- **Turn Detection:** Multilingual model (when needed)
 
-All models run through LiveKit's managed inference layer.
+Note: Gemini Live provides native audio output (no separate TTS). The agent uses LiveKit's RealtimeModel to handle speech generation and turn detection.
 
 ## Prerequisites
 
 - Python 3.10 – 3.13
 - uv package manager
 - A free LiveKit Cloud account (note: allows only one free deployment)
+
+Additionally, for Gemini Live you need a Google API key for the Gemini Live API (environment variable `GOOGLE_API_KEY`) or Vertex AI credentials if using Vertex.
+
+Environment variables
+
+- For local development, put `GOOGLE_API_KEY` in `.env.local` (this repo loads it via `load_dotenv(".env.local")`).
+- For Cloud deployments, set `GOOGLE_API_KEY` in the LiveKit Cloud agent's environment (dashboard or `lk agent env set GOOGLE_API_KEY=...`).
 
 ---
 
@@ -130,6 +135,17 @@ uv run agent.py start
 - Supports interruptions and turn-taking
 - Room lifecycle is managed by LiveKit Cloud
 
+Realtime usage (summary)
+
+- Realtime models output native audio (no separate TTS). Use `google.realtime.RealtimeModel`.
+- To speak first, call `session.generate_reply(...)` once after `session.start()`.
+- Let the model emit farewells and then call the `end_conversation` tool; the tool must only shut down the session (no speech).
+- Never call `session.say()` or `generate_reply()` inside a tool; avoid `allow_interruptions=False` with realtime models.
+
+Note on limitation
+
+Gemini Realtime may choose to call a tool without speaking a goodbye. This is expected behavior of the API. Your current implementation follows the recommended pattern (speech from the model, tools for control), which is the correct and safest approach for low-latency realtime agents.
+
 ## Cost Analysis
 
 <img width="805" height="577" alt="image" src="https://github.com/user-attachments/assets/1ac7b1d8-2fcb-4c1f-8d16-518420f42d74" />
@@ -147,3 +163,5 @@ Use `lk project` commands to manage LiveKit projects via CLI. For full details, 
 - `lk project list`: List configured projects.
 - `lk project remove`: Remove a project.
 - `lk project set-default`: Set default project.
+
+ 

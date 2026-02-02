@@ -15,7 +15,7 @@ from livekit.agents import (
     RunContext,
     function_tool,
 )
-from livekit.plugins import noise_cancellation, silero
+from livekit.plugins import google, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 load_dotenv(".env.local")
@@ -28,11 +28,8 @@ class Assistant(Agent):
     def __init__(self) -> None:
         super().__init__(
             instructions=(
-                "You are a helpful voice AI assistant. "
-                "If the user asks to end the call or says goodbye, "
-                "first say a polite goodbye like "
-                "'Okay, ending the conversation now. Goodbye!' "
-                "and THEN call the end_conversation tool."
+                "You are a helpful, friendly voice AI assistant. "
+                "You speak naturally and keep responses concise."
             )
         )
 
@@ -43,7 +40,9 @@ class Assistant(Agent):
         reason: Annotated[str, Field(description="Why the call is ending")],
     ) -> None:
         logger.info(f"End requested: {reason}")
-        context.session.userdata["end_requested"] = True
+
+        # Just close the session - LLM already spoke the goodbye
+        context.session.shutdown(drain=True)
 
 
 server = AgentServer()
@@ -52,47 +51,30 @@ server = AgentServer()
 @server.rtc_session()
 async def entrypoint(ctx: agents.JobContext):
     session = AgentSession(
-        stt=inference.STT(
-            model="assemblyai/universal-streaming",
-            language="en",
-        ),
-        llm=inference.LLM(
-            model="google/gemini-2.5-flash-lite",
-        ),
-        tts=inference.TTS(
-            model="inworld/inworld-tts-1.5-mini",
-            voice="Craig",
-            language="en",
+        llm=google.realtime.RealtimeModel(
+            model="gemini-2.5-flash-native-audio-preview-12-2025",
+            voice="Puck",
+            instructions=(
+                "You are a helpful, friendly voice AI assistant with a warm and engaging personality. "
+                "You assist users with their questions and requests using your extensive knowledge. "
+                "Keep your responses concise, natural, and conversational - like speaking to a friend. "
+                "Avoid complex formatting, emojis, or special punctuation since this is a voice interaction. "
+                "Be curious, show genuine interest in the user's questions, and add a touch of humor when appropriate. "
+                "If the user asks to end the call, says goodbye, or wants to finish the conversation, "
+                "you MUST ALWAYS say a short, polite goodbye message FIRST, then and ONLY then call the end_conversation tool. "
+                "Do NOT call the tool before speaking your goodbye. "
+                "The goodbye must be spoken as part of your response before any tool calls."
+            ),
         ),
         vad=silero.VAD.load(),
         turn_detection=MultilingualModel(),
-        userdata={
-            "end_requested": False,
-            "shutdown_started": False,
-        },
+        userdata={},
     )
 
     @session.on("conversation_item_added")
     def on_conversation_item_added(ev):
         if hasattr(ev, "item"):
             logger.info(f"[Chat] {ev.item.role}: {ev.item.content}")
-
-    @session.on("agent_state_changed")
-    def on_agent_state_changed(ev):
-        if (
-            ev.new_state == "listening"
-            and session.userdata["end_requested"]
-            and not session.userdata["shutdown_started"]
-        ):
-            session.userdata["shutdown_started"] = True
-
-            async def shutdown():
-                try:
-                    await session.shutdown(drain=True)
-                except Exception:
-                    pass
-
-            asyncio.create_task(shutdown())
 
     await session.start(
         room=ctx.room,
@@ -111,8 +93,7 @@ async def entrypoint(ctx: agents.JobContext):
     )
 
     await session.generate_reply(
-        instructions="Hello! How can I help you today?",
-        allow_interruptions=False,
+        instructions="Greet the user warmly and ask how you can help.",
     )
 
 
