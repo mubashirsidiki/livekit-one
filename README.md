@@ -8,8 +8,8 @@ You can talk to this agent from the terminal, browser, or phone.
 
 This agent is built with a standard STT → LLM → TTS voice pipeline powered by LiveKit Inference.
 
-- **Speech-to-Text:** AssemblyAI Universal Streaming
-- **Language Model:** Gemini 2.5 Flash Lite
+- **Speech-to-Text:** Cartesia Ink Whisper
+- **Language Model:** OpenAI GPT-5 Mini
 - **Text-to-Speech:** Inworld TTS (voice: Craig)
 - **Voice Activity Detection:** Silero
 - **Turn Detection:** Multilingual model
